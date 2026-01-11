@@ -1,0 +1,14 @@
+package com.pararam2006.alarmclock.domain.model
+
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+
+@Entity(tableName = "alarms")
+data class Alarm(
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0L,
+    val hour: Int,
+    val minute: Int,
+    val isEnabled: Boolean,
+    val daysOfWeek: List<Int>,
+)
