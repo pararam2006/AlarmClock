@@ -5,11 +5,16 @@ import kotlinx.serialization.Serializable
 @Serializable
 sealed class Route {
     @Serializable
-    object Main : Route()
+    data object Permissions : Route()
 
     @Serializable
-    object Creation : Route()
+    data object Main : Route()
 
     @Serializable
-    object Redacting : Route()
+    data object Creation : Route()
+
+    @Serializable
+    data class Redacting(
+        val alarmId: Long,
+    ) : Route()
 }

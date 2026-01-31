@@ -3,19 +3,18 @@ package com.pararam2006.alarmclock.utils
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.util.Log
+import androidx.core.content.ContextCompat
 import com.pararam2006.alarmclock.core.service.AlarmService
-import java.time.LocalDateTime
 
-class AlarmReceiver(
-    val alarmService: AlarmService
-) : BroadcastReceiver() {
-    val TAG = "MainScreen"
+class AlarmReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        val alarmId = intent.getLongExtra("ALARM_ID", -1L)
 
-    override fun onReceive(context: Context?, intent: Intent?) {
-        //TODO Логика срабатывания будильника
+        val serviceIntent = Intent(context, AlarmService::class.java).apply {
+            putExtra("ALARM_ID", alarmId)
+        }
 
-        Log.d(TAG, "Будильник сработал в ${LocalDateTime.now()}")
+        // Запускаем сервис как Foreground
+        ContextCompat.startForegroundService(context, serviceIntent)
     }
-
 }

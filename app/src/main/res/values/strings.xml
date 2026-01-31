@@ -1,3 +1,28 @@
 <resources>
-    <string name="app_name">Alarm Clock</string>
+    <string name="app_name">Будильник</string>
+
+    <string name="permissions_screen_title">Выдача разрешений</string>
+    <string name="permissions_screen_list_title">Для работы будильника необходимо предоставить следующие разрешения:</string>
+    <string name="permissions_screen_check_icon_desc">Разрешено</string>
+    <string name="permissions_screen_give_button_text">Дать</string>
+    <string name="permissions_screen_warning">Вы не сможете продолжить без этих разрешений</string>
+
+    <string name="main_screen_title">Мои будильники</string>
+    <string name="main_screen_fab_desc">Добавить</string>
+    <string name="main_screen_no_alarms_text">У вас пока нет будильников</string>
+
+    <string name="creation_screen_title">Новый будильник</string>
+    <string name="creation_screen_create_button_text">Создать будильник</string>
+    <string name="creation_screen_fab_desc">Назад</string>
+
+    <string name="redacting_screen_title">Редактирование</string>
+    <string name="redacting_screen_redacting_button_text">Изменить будильник</string>
+
+    <string name="ringing_screen_title">Пора просыпаться!</string>
+    <string name="ringing_screen_snooze_button_text">Отложить (5 мин)</string>
+    <string name="ringing_screen_shutdown_button_text">Выключить</string>
+
+    <string name="unkown_screen_title">Будильник</string>
+
+    <string name="snackbar_action_label">ОК</string>
 </resources>
