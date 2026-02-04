@@ -12,5 +12,6 @@ data class Alarm(
     val hour: Int,
     val minute: Int,
     val isEnabled: Boolean,
+    val isDeleted: Boolean = false,
     val daysOfWeek: List<Int>,
 )

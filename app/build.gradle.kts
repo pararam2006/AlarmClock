@@ -3,7 +3,10 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.androidx.room)
     kotlin("plugin.serialization") version "2.2.0"
+    id("com.google.gms.google-services") version "4.4.4" apply false
+    alias(libs.plugins.google.firebase.crashlytics)
 }
 
 android {
@@ -41,6 +44,10 @@ android {
     }
 }
 
+room {
+    schemaDirectory("$projectDir/schemas")
+}
+
 dependencies {
 
     implementation(libs.androidx.core.ktx)
@@ -55,10 +62,12 @@ dependencies {
     implementation(libs.koin.compose)
     implementation(libs.androidx.navigation.common.android)
     implementation(libs.androidx.navigation.compose.android)
+    implementation(platform(libs.firebase.bom))
     
     // Room
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
+    implementation(libs.firebase.crashlytics)
     ksp(libs.androidx.room.compiler)
 
     // Tests

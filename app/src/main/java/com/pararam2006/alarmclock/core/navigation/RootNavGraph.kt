@@ -10,10 +10,16 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -92,14 +98,18 @@ private fun AppMainContent() {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
 
-    val snackbarActionLabel = stringResource(R.string.snackbar_action_label)
+    val defaultSnackbarActionLabel = stringResource(R.string.snackbar_action_label)
 
     LaunchedEffect(Unit) {
-        snackbarManager.messages.collect { message ->
-            snackbarHostState.showSnackbar(
-                message = message,
-                actionLabel = snackbarActionLabel
+        snackbarManager.messages.collect { snackbarMessage ->
+            val result = snackbarHostState.showSnackbar(
+                message = snackbarMessage.message,
+                actionLabel = snackbarMessage.actionLabel ?: defaultSnackbarActionLabel,
+                duration = SnackbarDuration.Short
             )
+            if (result == SnackbarResult.ActionPerformed) {
+                snackbarMessage.onAction?.invoke()
+            }
         }
     }
 
@@ -112,7 +122,25 @@ private fun AppMainContent() {
 
     Scaffold(
         topBar = { TopAppBar(title = { Text(title) }) },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = {
+            SnackbarHost(snackbarHostState) { data ->
+                val dismissState = rememberSwipeToDismissBoxState(
+                    confirmValueChange = { value ->
+                        if (value != SwipeToDismissBoxValue.Settled) {
+                            data.dismiss()
+                            true
+                        } else {
+                            false
+                        }
+                    }
+                )
+                SwipeToDismissBox(
+                    state = dismissState,
+                    backgroundContent = {},
+                    content = { Snackbar(snackbarData = data) }
+                )
+            }
+        },
         floatingActionButton = {
             when {
                 currentDestination?.hasRoute<Route.Main>() == true -> {
@@ -142,18 +170,18 @@ private fun AppMainContent() {
             composable<Route.Main> {
                 MainScreen(
                     uiState = uiState,
-                    onEnabledChange = { alarm -> vm.toggleAlarm(alarm) },
-                    onDeleteAlarm = { alarm -> vm.deleteAlarm(alarm) },
+                    onEnabledChange = vm::toggleAlarm,
                     modifier = Modifier.padding(innerPadding),
                     onNavigateToRedacting = { alarm ->
                         navController.navigate(Route.Redacting(alarm.id))
                     },
+                    onDeleteAlarmRequest = vm::softDeleteAlarm,
                 )
             }
 
             composable<Route.Creation> {
                 CreationScreen(
-                    onAlarmCreation = { hour, minute -> vm.createAlarm(hour, minute) },
+                    onAlarmCreation = { hour, minute, days -> vm.createAlarm(hour, minute, days) },
                     onNavigateToMain = { navController.popBackStack() },
                     modifier = Modifier.padding(innerPadding),
                 )
@@ -168,8 +196,13 @@ private fun AppMainContent() {
                         onNavigateToMain = {
                             navController.popBackStack()
                         },
-                        onAlarmUpdate = { hour, minute ->
-                            vm.updateAlarm(alarm, hour, minute)
+                        onAlarmUpdate = { hour, minute, days ->
+                            vm.updateAlarm(
+                                alarm,
+                                hour,
+                                minute,
+                                days
+                            )
                         },
                         alarm = alarm,
                         modifier = Modifier.padding(innerPadding),

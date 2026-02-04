@@ -22,10 +22,11 @@ class AlarmRepository(
     private val snackbarManager: SnackbarManager
 ) {
     private val TAG = "AlarmRepository"
+
     private val coroutineExceptionHandler = CoroutineExceptionHandler { _, exception ->
         Log.e(TAG, "Repository Error: ${exception.message}", exception)
         repositoryScope.launch {
-            snackbarManager.showMessage("Ошибка при работе с базой данных") 
+            snackbarManager.showMessage("Ошибка при работе с базой данных")
         }
     }
 
@@ -37,20 +38,21 @@ class AlarmRepository(
 
     suspend fun getAlarmById(id: Long): Alarm? = alarmDao.getAlarmById(id)
 
-    fun createAlarm(hour: Int, minute: Int) {
+    fun createAlarm(hour: Int, minute: Int, daysOfWeek: List<Int>) {
         repositoryScope.launch {
             val alarms = alarmDao.getAllAlarms().firstOrNull() ?: emptyList()
-            val existingAlarm = alarms.find { it.hour == hour && it.minute == minute }
+            val existingAlarm = alarms.find { it.hour == hour && it.minute == minute && it.daysOfWeek == daysOfWeek }
 
-            val alarmToSave = existingAlarm?.copy(isEnabled = true) ?: Alarm(
+            val alarmToSave = existingAlarm?.copy(isEnabled = true, isDeleted = false) ?: Alarm(
                 hour = hour,
                 minute = minute,
                 isEnabled = true,
-                daysOfWeek = emptyList(),
+                daysOfWeek = daysOfWeek,
+                isDeleted = false
             )
 
             val id = alarmDao.insertAlarm(alarmToSave)
-            val timeInMillis = alarmUtils.calculateTimeInMillis(hour, minute)
+            val timeInMillis = alarmUtils.calculateTimeInMillis(hour, minute, daysOfWeek)
 
             scheduler.schedule(id, timeInMillis)
 
@@ -62,12 +64,12 @@ class AlarmRepository(
         }
     }
 
-    fun updateAlarm(alarm: Alarm, hour: Int, minute: Int) {
+    fun updateAlarm(alarm: Alarm, hour: Int, minute: Int, daysOfWeek: List<Int>) {
         repositoryScope.launch {
-            val updatedAlarm = alarm.copy(hour = hour, minute = minute, isEnabled = true)
+            val updatedAlarm = alarm.copy(hour = hour, minute = minute, isEnabled = true, daysOfWeek = daysOfWeek, isDeleted = false)
             alarmDao.updateAlarm(updatedAlarm)
 
-            val timeInMillis = alarmUtils.calculateTimeInMillis(hour, minute)
+            val timeInMillis = alarmUtils.calculateTimeInMillis(hour, minute, daysOfWeek)
             scheduler.schedule(updatedAlarm.id, timeInMillis)
 
             Log.i(TAG, "Будильник с id ${updatedAlarm.id} обновлен на $hour:$minute")
@@ -80,7 +82,7 @@ class AlarmRepository(
             alarmDao.updateAlarm(updatedAlarm)
 
             if (updatedAlarm.isEnabled) {
-                val timeInMillis = alarmUtils.calculateTimeInMillis(updatedAlarm.hour, updatedAlarm.minute)
+                val timeInMillis = alarmUtils.calculateTimeInMillis(updatedAlarm.hour, updatedAlarm.minute, updatedAlarm.daysOfWeek)
                 scheduler.schedule(updatedAlarm.id, timeInMillis)
                 Log.i(TAG, "Будильник с id ${updatedAlarm.id} включен")
             } else {
@@ -90,11 +92,33 @@ class AlarmRepository(
         }
     }
 
-    fun deleteAlarm(alarm: Alarm) {
+    fun softDeleteAlarm(alarm: Alarm) {
         repositoryScope.launch {
             scheduler.cancel(alarm)
+            alarmDao.updateAlarm(alarm.copy(isDeleted = true))
+            Log.i(TAG, "Будильник с id ${alarm.id} помечен как удаленный")
+            snackbarManager.showMessageWithAction("Будильник удален", "Отмена") {
+                undoSoftDeleteAlarm(alarm)
+            }
+        }
+    }
+
+    fun undoSoftDeleteAlarm(alarm: Alarm) {
+        repositoryScope.launch {
+            val restoredAlarm = alarm.copy(isDeleted = false)
+            alarmDao.updateAlarm(restoredAlarm)
+            if (restoredAlarm.isEnabled) {
+                val timeInMillis = alarmUtils.calculateTimeInMillis(restoredAlarm.hour, restoredAlarm.minute, restoredAlarm.daysOfWeek)
+                scheduler.schedule(restoredAlarm.id, timeInMillis)
+            }
+            Log.i(TAG, "Будильник с id ${alarm.id} восстановлен")
+        }
+    }
+
+    fun hardDeleteAlarm(alarm: Alarm) {
+        repositoryScope.launch {
             alarmDao.deleteAlarm(alarm)
-            Log.i(TAG, "Будильник с id ${alarm.id} удален")
+            Log.i(TAG, "Будильник с id ${alarm.id} окончательно удален")
         }
     }
 
@@ -106,13 +130,11 @@ class AlarmRepository(
                 val newHour = calendar.get(Calendar.HOUR_OF_DAY)
                 val newMinute = calendar.get(Calendar.MINUTE)
 
-                // Проверяем, нет ли уже будильника на это время
                 val alarms = alarmDao.getAllAlarms().firstOrNull() ?: emptyList()
                 val conflict = alarms.find { it.hour == newHour && it.minute == newMinute && it.id != alarmId }
 
                 if (conflict != null) {
                     snackbarManager.showMessage("Нельзя отложить: на это время уже есть будильник")
-                    Log.w(TAG, "Ошибка откладывания: будильник на $newHour:$newMinute уже существует")
                     return@launch
                 }
 
@@ -124,7 +146,7 @@ class AlarmRepository(
                 alarmDao.updateAlarm(snoozedAlarm)
 
                 scheduler.schedule(alarmId, calendar.timeInMillis)
-                Log.i(TAG, "Будильник $alarmId отложен на 5 минут до $newHour:$newMinute")
+                Log.i(TAG, "Будильник $alarmId отложен на 5 минут")
             }
         }
     }
@@ -133,11 +155,19 @@ class AlarmRepository(
         repositoryScope.launch {
             val alarm = alarmDao.getAlarmById(alarmId)
             if (alarm != null) {
-                val disabledAlarm = alarm.copy(isEnabled = false)
-                alarmDao.updateAlarm(disabledAlarm)
-                scheduler.cancel(disabledAlarm)
-                Log.i(TAG, "Будильник $alarmId выключен")
+                if (alarm.daysOfWeek.isEmpty()) {
+                    val disabledAlarm = alarm.copy(isEnabled = false)
+                    alarmDao.updateAlarm(disabledAlarm)
+                    scheduler.cancel(disabledAlarm)
+                    Log.i(TAG, "Разовый будильник $alarmId выключен")
+                } else {
+                    val nextTime = alarmUtils.calculateTimeInMillis(alarm.hour, alarm.minute, alarm.daysOfWeek)
+                    scheduler.schedule(alarm.id, nextTime)
+                    Log.i(TAG, "Повторяющийся будильник $alarmId перепланирован")
+                }
             }
         }
     }
+
+    suspend fun deleteAllDeletedAlarms() = alarmDao.deleteAllDeletedAlarms()
 }

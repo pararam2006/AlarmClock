@@ -1,5 +1,6 @@
 [versions]
 agp = "8.13.0"
+firebaseBom = "34.8.0"
 koinAndroid = "4.1.1"
 kotlin = "2.0.21"
 coreKtx = "1.17.0"
@@ -13,9 +14,13 @@ navigationCommonAndroid = "2.9.6"
 navigationComposeAndroid = "2.9.6"
 room = "2.6.1"
 ksp = "2.0.21-1.0.27"
+firebaseCrashlytics = "20.0.4"
+googleGmsGoogleServices = "4.4.4"
+googleFirebaseCrashlytics = "3.0.6"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
@@ -36,9 +41,13 @@ koin-compose = { group = "io.insert-koin", name = "koin-androidx-compose", versi
 androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
 androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
 androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+firebase-crashlytics = { group = "com.google.firebase", name = "firebase-crashlytics", version.ref = "firebaseCrashlytics" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+google-gms-google-services = { id = "com.google.gms.google-services", version.ref = "googleGmsGoogleServices" }
+google-firebase-crashlytics = { id = "com.google.firebase.crashlytics", version.ref = "googleFirebaseCrashlytics" }
+androidx-room = { id = "androidx.room", version.ref = "room" }

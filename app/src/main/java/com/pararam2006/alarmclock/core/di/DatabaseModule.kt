@@ -12,7 +12,9 @@ val databaseModule = module {
             androidContext(),
             AlarmDatabase::class.java,
             "alarm_database"
-        ).build()
+        )
+            .addMigrations(AlarmDatabase.MIGRATION_1_2)
+            .build()
     }
 
     single { get<AlarmDatabase>().alarmDao() }

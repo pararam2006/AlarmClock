@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface AlarmDao {
-    @Query("SELECT * FROM alarms")
+    @Query("SELECT * FROM alarms WHERE isDeleted = 0 ORDER BY hour, minute ASC")
     fun getAllAlarms(): Flow<List<Alarm>>
 
     @Query("SELECT * FROM alarms WHERE id = :id")
@@ -28,4 +28,7 @@ interface AlarmDao {
 
     @Query("DELETE FROM alarms WHERE id = :id")
     suspend fun deleteAlarmById(id: Long)
+
+    @Query("DELETE FROM alarms where isDeleted = 1")
+    suspend fun deleteAllDeletedAlarms()
 }

@@ -5,9 +5,6 @@ import kotlinx.serialization.Serializable
 @Serializable
 sealed class Route {
     @Serializable
-    data object Permissions : Route()
-
-    @Serializable
     data object Main : Route()
 
     @Serializable
